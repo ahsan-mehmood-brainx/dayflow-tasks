@@ -1,50 +1,31 @@
 ---
-diff_hash: c0f77cd51446a6e6834f72ef9602ba7d312f2f91df0303393f5e53bfb871c24b
-reviewed_at: 2026-11-02T12:01:03Z
+diff_hash: 695df38bc7dee83ab6a7596816d0fea85d10d6998ba34fff361fd7ba466feb8b
+reviewed_at: 2026-11-10T07:11:02Z
+stack: react
+---
 
 ## Summary
 
-Initial project scaffold for DayFlowTasks, an Expo/React Native app (Expo ~58,
-React Native 0.88.1, React 19.3.0, TypeScript). This is the unmodified output
-of `npx create-expo-app` (blank TypeScript template) plus a `.claude/settings.json`
-and `AGENTS.md`: `App.tsx`/`index.ts` are the stock placeholder screen and
-entry point, `app.json`/`tsconfig.json`/`.gitignore` are template defaults, and
-the asset files are the template's default icon/splash/favicon images. There is
-no custom application logic yet, so most stack-specific React criteria
-(routing, state management, hooks, data fetching, styling conventions) don't
-apply — there's nothing in this diff to evaluate them against. One
-consistency issue was found in the boilerplate itself.
+Stack: React (React Native / Expo). No app code changed. The diff adds a GitHub Actions workflow (`.github/workflows/code-review-pr.yml`). On same-repo PRs it reads `.code-reviews/ledger.jsonl` and works out which PR commits were reviewed. It skips the hook's own `chore(code-review):` commits and commits that only touch `.code-reviews/`, which matches `hooks/post-commit`. Commits older than the ledger's adoption are marked legacy. It then posts or updates one PR comment with the average score and a per-commit table. The diff also stages the deletion of the old `.code-reviews/brainx-review.md`. `post-commit` deletes that file but never stages the deletion, so it was still tracked.
+
+I checked the workflow by running its script locally against `main..HEAD` in a temporary worktree, with the fetch and comment steps left out. It ran without errors and gave the expected result: 2 reviewed commits (3e98d1c, 9fc677f), 100/100, PASS, and the chore commits skipped. Security looks fine. Event values reach the script through `env:` rather than `${{ }}` inside `run:`, so there's no script injection. Permissions are limited to `contents: read` and `pull-requests: write`, and fork PRs are skipped.
+
+Known limitation (not a defect in this diff): ledger entries are matched by exact commit SHA. If a reviewed commit is rebased or amended after the fact, the workflow will report it as "unreviewed" and the PR will show FAIL. The comment's warning text already says this can happen.
 
 ## Findings
 
+### Critical (0)
+
+### High (0)
+
+### Medium (0)
+
 ### Low (1)
-- **LICENSE:1-3** — The committed `LICENSE` file is still Expo's own template
-  license, copyrighted to "650 Industries, Inc. (aka Expo)" rather than to the
-  DayFlowTasks project owner. *(consistency)*
+- **.github/workflows/code-review-pr.yml:116** — The workflow finds its existing score comment only by checking that the body starts with `<!-- brainx-code-review-score -->`. It doesn't check who wrote the comment. *(correctness)*
   - status: open
   - dev_reasoning: N/A
-  - ai_reasoning: `create-expo-app` scaffolds this file verbatim from its
-    template and it's easy to carry over unnoticed. If the intent is to license
-    this project's own code (e.g. under MIT, to ahsan.mehmood@brainxtech.com /
-    BrainX), the copyright line should be updated to reflect the actual
-    rights holder before this becomes the project's real license file. If the
-    MIT template text itself was intentionally kept as-is, this can be marked
-    skipped with that reasoning.
+  - ai_reasoning: Any PR participant can post a comment that starts with the marker. If that comment is the newest match, the job sends a PATCH to it. Depending on token rights, this either overwrites a human's comment or fails with a 403 and fails the job. That contradicts the inline note about not "editing another bot comment". Fix: also filter on the author in the `--jq` expression, e.g. `select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- brainx-code-review-score -->")))`.
 
 ## Reviewed files
-- .claude/settings.json — reviewed (Claude Code plugin config, not app code; no issues)
-- .gitignore — reviewed (standard Expo ignores; consistent with CNG — `ios/`/`android/` correctly left generated)
-- AGENTS.md — reviewed (project instructions, not app code; no issues)
-- App.tsx — reviewed (stock placeholder screen, no logic to evaluate)
-- LICENSE — reviewed (see finding above)
-- app.json — reviewed (template defaults; assets referenced all exist)
-- assets/android-icon-background.png — skipped (binary asset)
-- assets/android-icon-foreground.png — skipped (binary asset)
-- assets/android-icon-monochrome.png — skipped (binary asset)
-- assets/favicon.png — skipped (binary asset)
-- assets/icon.png — skipped (binary asset)
-- assets/splash-icon.png — skipped (binary asset)
-- index.ts — reviewed (stock entry point, matches Expo Router-less template)
-- package-lock.json — skimmed (dependency tree matches package.json, no suspicious entries)
-- package.json — reviewed (dependency versions consistent with lockfile)
-- tsconfig.json — reviewed (extends expo/tsconfig.base, strict mode on; fine)
+- .github/workflows/code-review-pr.yml
+- .code-reviews/brainx-review.md (deleted; previous review file, not reviewed)
